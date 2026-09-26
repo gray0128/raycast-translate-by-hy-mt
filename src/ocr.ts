@@ -1,5 +1,5 @@
 import { execFile } from "child_process";
-import { existsSync, statSync } from "fs";
+import { existsSync } from "fs";
 import { arch } from "os";
 import path from "path";
 import { promisify } from "util";
@@ -22,11 +22,14 @@ export async function prepareScreenCapture(): Promise<() => Promise<string>> {
 
 async function resolveOcrBinary(): Promise<string> {
   const bundled = path.join(environment.assetsPath, "ocr-tool");
-  const source = path.join(environment.assetsPath, "ocr.swift");
-  if (existsSync(bundled) && (!existsSync(source) || statSync(bundled).mtimeMs >= statSync(source).mtimeMs)) {
+  if (existsSync(bundled)) {
     return bundled;
   }
-  return compileOcrTool(source);
+  const cached = path.join(environment.supportPath, "ocr-tool");
+  if (existsSync(cached)) {
+    return cached;
+  }
+  return compileOcrTool(path.join(environment.assetsPath, "ocr.swift"));
 }
 
 async function compileOcrTool(source: string): Promise<string> {

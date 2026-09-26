@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import test from "node:test";
 import { interpretOcrStatus } from "../src/ocr-status";
-import { parsePendingTranslation, translationCommandLink } from "../src/pending-translation";
+import { extensionCommandLink, parsePendingTranslation } from "../src/pending-translation";
 import {
   LANGUAGE_OPTIONS,
   LESSON_SECTIONS,
@@ -152,9 +152,9 @@ test("学习模式以英语教师口吻覆盖指定知识点，并走对话补�
   assert.match(content, /Please confirm/);
 });
 
-test("截图完成后打开翻译命令，而不是启动器首页", () => {
-  const link = translationCommandLink("gray0128", "translate-by-hy-mt");
-  assert.equal(link, "raycast://extensions/gray0128/translate-by-hy-mt/translate");
+test("截图完成后重新打开截图翻译命令本身", () => {
+  const link = extensionCommandLink("gray0128", "translate-by-hy-mt", "translate-screenshot");
+  assert.equal(link, "raycast://extensions/gray0128/translate-by-hy-mt/translate-screenshot");
   assert.notEqual(link, "raycast://");
   assert.deepEqual(
     parsePendingTranslation(JSON.stringify({ sourceText: "你好", translation: "Hello", target: "en" })),
@@ -172,7 +172,7 @@ test("配置项里只有 API Key 必填，语言都在模型支持范围内", ()
   assert.deepEqual(required, ["apiKey"]);
   assert.deepEqual(
     info.commands.map((command) => `${command.name}:${command.mode}`),
-    ["translate:view", "translate-screenshot:no-view"],
+    ["translate:view", "translate-screenshot:view"],
   );
   const target = info.preferences.find((item) => item.name === "targetLanguage");
   for (const choice of target?.data ?? []) {

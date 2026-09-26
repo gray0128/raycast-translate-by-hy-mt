@@ -22,14 +22,14 @@ Raycast 会导入这个目录。给「翻译」和「截图翻译」分别设置
 
 ### Tinycast
 
-下载 [Releases](https://github.com/gray0128/raycast-translate-by-hy-mt/releases) 中的 `raycast-translate-by-hy-mt-1.1.4.zip`，解压后在 Tinycast 的「设置 → 扩展 → 从文件夹添加」里选择解压出的目录。
+下载 [Releases](https://github.com/gray0128/raycast-translate-by-hy-mt/releases) 中的 `raycast-translate-by-hy-mt-1.1.5.zip`，解压后在 Tinycast 的「设置 → 扩展 → 从文件夹添加」里选择解压出的目录。
 
 也可以在本机执行 `npm install` 和 `npm run build`，再添加生成的 `dist` 目录。Tinycast 从源码安装时会执行构建；截图识别需要本机有 Swift 编译器。
 
 ## 使用
 
 1. 在任意应用里选中文字，运行「翻译」。扩展读取选区并显示译文。
-2. 运行「截图翻译」，框选屏幕上的文字。识别使用 macOS Vision，在本机完成。翻译结束后会打开「翻译」命令并显示译文，不会停在启动器首页。
+2. 运行「截图翻译」，框选屏幕上的文字。识别使用 macOS Vision，在本机完成。翻译结束后，Tinycast 或 Raycast 会重新打开这个命令并显示译文。按 `⌘K` 选择「返回主界面」回到启动器。
 3. 回车按配置执行复制或粘贴。也可以改目标语言、修改原文后重新翻译。
 4. 在译文页面选择「学习模式」。扩展以英语教师的角色，用简体中文讲解当前原文的句式、语法、固定结构、核心词汇和典故。「其他表达方式」只列出英文说法。已有译文只作为对照。选择「返回译文」回到翻译结果。没有依据的典故不会被写成既定事实。
 

@@ -11,7 +11,7 @@ import {
   openExtensionPreferences,
   showToast,
 } from "@raycast/api";
-import { LANGUAGE_OPTIONS, errorMessage, readSettings, translateText, type Settings } from "./hy-mt";
+import { LANGUAGE_OPTIONS, errorMessage, explainText, readSettings, translateText, type Settings } from "./hy-mt";
 
 type TranslateContext = {
   sourceText?: string;
@@ -29,13 +29,14 @@ type ResultState = {
   translation: string;
   target: string;
   targetName: string;
+  lesson?: string;
 };
 
 type ViewState =
   | { status: "loading" }
   | { status: "form"; source: string }
   | ResultState
-  | { status: "error"; message: string; source?: string };
+  | { status: "error"; message: string; source?: string; previous?: ResultState; retry?: "translate" | "lesson" };
 
 export default function Command(
   props: LaunchProps<{ arguments: TranslateArguments; launchContext?: TranslateContext }>,
@@ -114,7 +115,37 @@ export default function Command(
                 title="重试"
                 onAction={() => {
                   setState({ status: "loading" });
+                  if (state.retry === "lesson" && state.previous) {
+                    void explain(settings, state.previous, setState);
+                    return;
+                  }
                   void run(settings, state.source ?? "", undefined, setState, () => false);
+                }}
+              />
+            ) : null}
+            {state.previous ? (
+              <Action
+                title="返回译文"
+                onAction={() => {
+                  const previous = state.previous;
+                  if (!previous) return;
+                  setState({ ...previous, lesson: undefined });
+                }}
+              />
+            ) : null}
+            {state.source && state.retry !== "lesson" ? (
+              <Action
+                title="学习模式"
+                onAction={() => {
+                  const previous: ResultState = state.previous ?? {
+                    status: "result",
+                    source: state.source ?? "",
+                    translation: "",
+                    target: settings.targetLanguage,
+                    targetName: languageTitle(settings.targetLanguage),
+                  };
+                  setState({ status: "loading" });
+                  void explain(settings, previous, setState);
                 }}
               />
             ) : null}
@@ -135,6 +166,11 @@ export default function Command(
         void run(settings, state.source, target, setState, () => false);
       }}
       onEdit={() => setState({ status: "form", source: state.source })}
+      onExplain={() => {
+        setState({ status: "loading" });
+        void explain(settings, state, setState);
+      }}
+      onCloseLesson={() => setState({ ...state, lesson: undefined })}
     />
   );
 }
@@ -172,15 +208,28 @@ function ResultView(props: {
   pasteFirst: boolean;
   onRetranslate: (target: string) => void;
   onEdit: () => void;
+  onExplain: () => void;
+  onCloseLesson: () => void;
 }) {
-  const copy = <Action.CopyToClipboard title="复制译文" content={props.state.translation} />;
-  const paste = <Action.Paste title="粘贴译文" content={props.state.translation} />;
+  const learning = Boolean(props.state.lesson);
+  const copy = (
+    <Action.CopyToClipboard
+      title={learning ? "复制讲解" : "复制译文"}
+      content={props.state.lesson || props.state.translation}
+    />
+  );
+  const paste = (
+    <Action.Paste title={learning ? "粘贴讲解" : "粘贴译文"} content={props.state.lesson || props.state.translation} />
+  );
   return (
     <Detail
-      markdown={props.state.translation}
+      markdown={props.state.lesson || props.state.translation}
       metadata={
         <Detail.Metadata>
-          <Detail.Metadata.Label title="目标语言" text={props.state.targetName} />
+          <Detail.Metadata.Label
+            title={learning ? "模式" : "目标语言"}
+            text={learning ? "学习模式" : props.state.targetName}
+          />
           <Detail.Metadata.Separator />
           <Detail.Metadata.Label title="原文" text={props.state.source} />
         </Detail.Metadata>
@@ -189,17 +238,26 @@ function ResultView(props: {
         <ActionPanel>
           {props.pasteFirst ? paste : copy}
           {props.pasteFirst ? copy : paste}
+          {learning ? (
+            <Action title="返回译文" onAction={props.onCloseLesson} />
+          ) : (
+            <Action title="学习模式" onAction={props.onExplain} />
+          )}
           <Action.CopyToClipboard title="复制原文" content={props.state.source} />
           <Action title="修改原文" onAction={props.onEdit} />
-          <ActionPanel.Submenu title="翻译为其他语言">
-            {LANGUAGE_OPTIONS.map((language) => (
-              <Action
-                key={language.value}
-                title={language.title}
-                onAction={() => props.onRetranslate(language.value)}
-              />
-            ))}
-          </ActionPanel.Submenu>
+          {learning ? (
+            <Action title="重新讲解" onAction={props.onExplain} />
+          ) : (
+            <ActionPanel.Submenu title="翻译为其他语言">
+              {LANGUAGE_OPTIONS.map((language) => (
+                <Action
+                  key={language.value}
+                  title={language.title}
+                  onAction={() => props.onRetranslate(language.value)}
+                />
+              ))}
+            </ActionPanel.Submenu>
+          )}
           <Action title="打开配置" onAction={openExtensionPreferences} />
         </ActionPanel>
       }
@@ -227,6 +285,21 @@ async function run(
     }
   } catch (error) {
     if (!cancelled()) setState({ status: "error", message: errorMessage(error), source: text });
+  }
+}
+
+async function explain(settings: Settings, current: ResultState, setState: (state: ViewState) => void) {
+  try {
+    const lesson = await explainText(settings, current.source, current.translation);
+    setState({ ...current, lesson });
+  } catch (error) {
+    setState({
+      status: "error",
+      message: errorMessage(error),
+      source: current.source,
+      previous: current,
+      retry: "lesson",
+    });
   }
 }
 

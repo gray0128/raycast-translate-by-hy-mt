@@ -5,7 +5,9 @@ import test from "node:test";
 import { interpretOcrStatus } from "../src/ocr-status";
 import {
   LANGUAGE_OPTIONS,
+  LESSON_SECTIONS,
   extractTranslation,
+  prepareLesson,
   prepareRequest,
   readSettings,
   renderResult,
@@ -127,6 +129,24 @@ test("截图工具用退出码区分取消和没有文字", () => {
   assert.deepEqual(interpretOcrStatus(3, "", ""), { message: "截图里没有识别到文字。" });
   assert.deepEqual(interpretOcrStatus(0, " 你好 \n", ""), { text: "你好" });
   assert.match(interpretOcrStatus(1, "", "permission")?.message ?? "", /permission/);
+});
+
+test("学习模式以英语教师口吻覆盖指定知识点，并走对话补全", () => {
+  const prepared = prepareLesson(settings({ apiMode: "translations", glossary: "议程=agenda" }), {
+    source: "会议开始前请确认所有参会人员都收到了议程。",
+    translation: "Please confirm that all attendees have received the agenda before the meeting starts.",
+  });
+  assert.ok(!("error" in prepared));
+  if ("error" in prepared) return;
+  assert.equal(prepared.url, "https://tokenhub.tencentmaas.com/v1/chat/completions");
+  assert.equal(prepared.body.max_tokens, 2048);
+  const content = (prepared.body.messages as Array<{ content: string }>)[0].content;
+  assert.match(content, /英语教师/);
+  assert.match(content, /不要只输出译文/);
+  assert.match(content, /不要编造/);
+  for (const section of LESSON_SECTIONS) assert.match(content, new RegExp(section));
+  assert.match(content, /议程 翻译成 agenda/);
+  assert.match(content, /Please confirm/);
 });
 
 test("配置项里只有 API Key 必填，语言都在模型支持范围内", () => {

@@ -246,6 +246,97 @@ export function prepareRequest(
   };
 }
 
+export const LESSON_SECTIONS = ["句式", "语法", "固定结构", "核心词汇", "典故", "其他表达方式"] as const;
+
+export function buildLessonPrompt(input: {
+  source: string;
+  translation?: string;
+  context?: string;
+  glossaryText?: string;
+}): string {
+  const parts = [
+    "你是一位英语教师。请用简体中文讲解下面的内容，帮助学习者理解相关的英语知识。不要只输出译文。",
+    "请使用 Markdown，并依次写出以下标题。每一项都要结合原文说明；某一项在内容里确实没有时，用一句话写明没有，不要编造：",
+    LESSON_SECTIONS.map((section) => `- ${section}`).join("\n"),
+    "讲解中的英语例句、词块和改写保留英文，并给出简体中文释义。",
+  ];
+  if (trim(input.context)) parts.push(`背景信息：\n${input.context}`);
+  if (trim(input.glossaryText)) parts.push(`术语对照，讲解时沿用这些译法：\n${input.glossaryText}`);
+  parts.push(`原文：\n${input.source}`);
+  if (trim(input.translation)) parts.push(`已有译文，仅供对照：\n${input.translation}`);
+  return parts.join("\n\n");
+}
+
+export function prepareLesson(
+  settings: Settings,
+  input: { source: string; translation?: string },
+): { error: FieldError } | PreparedRequest {
+  if (!settings.apiKey) {
+    return {
+      error: {
+        type: "secretKey",
+        message: "未填写 API Key。请在扩展配置中填写腾讯云 TokenHub 的密钥后再讲解。",
+      },
+    };
+  }
+  const endpoint = resolveEndpoint(settings.baseUrl, "chat");
+  if ("error" in endpoint) return endpoint;
+  const source = trim(input.source);
+  if (!source) return { error: { type: "param", message: "没有需要讲解的内容。" } };
+
+  const extra = parseExtra(settings.extra);
+  if ("error" in extra) return extra;
+  const temperature = parseNumber(settings.temperature, "Temperature", { min: 0 });
+  if ("error" in temperature) return temperature;
+  const topP = parseNumber(settings.topP, "Top P", { min: 0, max: 1 });
+  if ("error" in topP) return topP;
+  const maxTokens = parseInteger(settings.maxTokens, "Max Tokens", { min: 1 });
+  if ("error" in maxTokens) return maxTokens;
+  const timeout = resolveTimeout(settings.timeout);
+  if ("error" in timeout) return timeout;
+  const glossary = parseGlossary(settings.glossary);
+  if ("error" in glossary) return glossary;
+
+  const body: Record<string, unknown> = {
+    model: settings.model,
+    messages: [
+      {
+        role: "user",
+        content: buildLessonPrompt({
+          source,
+          translation: input.translation,
+          context: settings.context,
+          glossaryText: glossary.pairs.map((pair) => `${pair.source} 翻译成 ${pair.target}`).join("\n"),
+        }),
+      },
+    ],
+  };
+  if ("value" in temperature && temperature.set) body.temperature = temperature.value;
+  if ("value" in topP && topP.set) body.top_p = topP.value;
+  body.max_tokens = "value" in maxTokens && maxTokens.set ? maxTokens.value : 2048;
+  if (extra.value) Object.assign(body, extra.value);
+
+  return {
+    url: endpoint.url,
+    body,
+    timeout: timeout.value,
+    apiKey: settings.apiKey,
+    useSeparator: false,
+    segmentCount: 1,
+    target: "zh-Hans",
+    targetName: "学习模式",
+  };
+}
+
+export async function explainText(settings: Settings, source: string, translation?: string): Promise<string> {
+  const prepared = prepareLesson(settings, { source, translation });
+  if ("error" in prepared) throw new Error(prepared.error.message);
+  const data = await postJson(prepared);
+  const extracted = extractTranslation(data);
+  if ("error" in extracted) throw new Error(extracted.error.message);
+  return trim(extracted.text);
+}
+
 export async function translateText(
   settings: Settings,
   text: string,

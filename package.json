@@ -2,7 +2,7 @@
   "$schema": "https://www.raycast.com/schemas/extension.json",
   "name": "translate-by-hy-mt",
   "title": "混元翻译 HY-MT2",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "用腾讯混元 HY-MT2 翻译选中文本或截图。兼容 Raycast 与 Tinycast。",
   "icon": "icon.png",
   "author": "gray0128",

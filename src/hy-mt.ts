@@ -256,9 +256,10 @@ export function buildLessonPrompt(input: {
 }): string {
   const parts = [
     "你是一位英语教师。请用简体中文讲解下面的内容，帮助学习者理解相关的英语知识。不要只输出译文。",
-    "请使用 Markdown，并依次写出以下标题。每一项都要结合原文说明；某一项在内容里确实没有时，用一句话写明没有，不要编造：",
+    "请使用 Markdown，并依次写出以下标题。除「其他表达方式」外，每一项都用简体中文结合原文说明；某一项在内容里确实没有时，用一句话写明没有，不要编造：",
     LESSON_SECTIONS.map((section) => `- ${section}`).join("\n"),
-    "讲解中的英语例句、词块和改写保留英文，并给出简体中文释义。",
+    "「其他表达方式」这一节只输出英文，每行一条可以替换原文意思的英文说法。这一节不要写中文讲解或中文释义。",
+    "其他标题里的英语例句和词块保留英文，并给出简体中文释义。",
   ];
   if (trim(input.context)) parts.push(`背景信息：\n${input.context}`);
   if (trim(input.glossaryText)) parts.push(`术语对照，讲解时沿用这些译法：\n${input.glossaryText}`);

@@ -144,6 +144,8 @@ test("学习模式以英语教师口吻覆盖指定知识点，并走对话补�
   assert.match(content, /英语教师/);
   assert.match(content, /不要只输出译文/);
   assert.match(content, /不要编造/);
+  assert.match(content, /「其他表达方式」这一节只输出英文/);
+  assert.match(content, /这一节不要写中文讲解或中文释义/);
   for (const section of LESSON_SECTIONS) assert.match(content, new RegExp(section));
   assert.match(content, /议程 翻译成 agenda/);
   assert.match(content, /Please confirm/);

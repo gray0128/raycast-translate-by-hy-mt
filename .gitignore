@@ -5,3 +5,4 @@ assets/ocr-tool
 .DS_Store
 *.log
 .commandcode/
+.codegraph/

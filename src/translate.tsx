@@ -44,7 +44,7 @@ export default function Command(
 ) {
   const settings = useMemo(() => readSettings(getPreferenceValues()), []);
   const [state, setState] = useState<ViewState>({ status: "loading" });
-  const argumentText = props.arguments.text;
+  const argumentText = props.arguments?.text;
   const contextSource = props.launchContext?.sourceText;
   const contextTranslation = props.launchContext?.translation;
   const contextTarget = props.launchContext?.target;

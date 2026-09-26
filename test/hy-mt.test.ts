@@ -159,8 +159,8 @@ test("配置项里只有 API Key 必填，语言都在模型支持范围内", ()
   const required = info.preferences.filter((item) => item.required).map((item) => item.name);
   assert.deepEqual(required, ["apiKey"]);
   assert.deepEqual(
-    info.commands.map((command) => command.name),
-    ["translate", "translate-screenshot"],
+    info.commands.map((command) => `${command.name}:${command.mode}`),
+    ["translate:view", "translate-screenshot:view"],
   );
   const target = info.preferences.find((item) => item.name === "targetLanguage");
   for (const choice of target?.data ?? []) {

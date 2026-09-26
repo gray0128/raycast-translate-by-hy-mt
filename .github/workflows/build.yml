@@ -1,0 +1,62 @@
+name: Build extension
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Test
+        run: npm test
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
+
+      - name: Verify package
+        run: |
+          set -euo pipefail
+          test -f dist/package.json
+          test -f dist/translate.js
+          test -f dist/translate-screenshot.js
+          test -x dist/assets/ocr-tool
+          node -e 'const info=require("./dist/package.json"); const required=info.preferences.filter((item)=>item.required).map((item)=>item.name); if (info.name!=="translate-by-hy-mt" || required.join(",")!=="apiKey") { console.error(required); process.exit(1); }'
+          version="$(node -p "require('./package.json').version")"
+          rm -f "raycast-translate-by-hy-mt-${version}.zip"
+          ditto -c -k dist "raycast-translate-by-hy-mt-${version}.zip"
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          version="$(node -p "require('./package.json').version")"
+          asset="raycast-translate-by-hy-mt-${version}.zip"
+          tag="v${version}"
+          notes="支持选中文本和截图翻译。可在 Raycast 与 Tinycast 中使用。"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            gh release upload "$tag" "$asset" --clobber
+          else
+            gh release create "$tag" "$asset" --title "$tag" --notes "$notes"
+          fi

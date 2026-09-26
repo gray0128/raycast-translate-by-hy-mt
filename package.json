@@ -1,0 +1,293 @@
+{
+  "$schema": "https://www.raycast.com/schemas/extension.json",
+  "name": "translate-by-hy-mt",
+  "title": "混元翻译 HY-MT2",
+  "version": "1.0.0",
+  "description": "用腾讯混元 HY-MT2 翻译选中文本或截图。兼容 Raycast 与 Tinycast。",
+  "icon": "icon.png",
+  "author": "gray0128",
+  "platforms": ["macOS"],
+  "categories": ["Productivity"],
+  "license": "MIT",
+  "commands": [
+    {
+      "name": "translate",
+      "title": "翻译",
+      "subtitle": "HY-MT2",
+      "description": "翻译选中的文本。没有选中文本时手动输入。",
+      "mode": "view",
+      "arguments": [
+        {
+          "name": "text",
+          "placeholder": "要翻译的文本",
+          "type": "text",
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "translate-screenshot",
+      "title": "截图翻译",
+      "subtitle": "HY-MT2",
+      "description": "框选屏幕区域，识别文字并翻译。",
+      "mode": "no-view"
+    }
+  ],
+  "preferences": [
+    {
+      "name": "apiKey",
+      "title": "API Key",
+      "description": "必填。腾讯云 TokenHub 的 API Key。自部署服务如果不校验密钥，填写任意非空字符串。",
+      "type": "password",
+      "required": true,
+      "placeholder": "sk-..."
+    },
+    {
+      "name": "baseUrl",
+      "title": "接口根地址",
+      "description": "选填。OpenAI 兼容根地址，通常以 /v1 结尾。留空使用 https://tokenhub.tencentmaas.com/v1 。",
+      "type": "textfield",
+      "required": false,
+      "placeholder": "https://tokenhub.tencentmaas.com/v1"
+    },
+    {
+      "name": "apiMode",
+      "title": "调用方式",
+      "description": "对话补全可用于 TokenHub 和自部署。术语库接口只适用于 TokenHub。",
+      "type": "dropdown",
+      "required": false,
+      "default": "chat",
+      "data": [
+        { "title": "对话补全（推荐，支持自部署）", "value": "chat" },
+        { "title": "术语库接口（仅 TokenHub）", "value": "translations" }
+      ]
+    },
+    {
+      "name": "model",
+      "title": "模型",
+      "description": "选填。官方模型为 hy-mt2-pro、hy-mt2-plus、hy-mt2-lite。自部署填写服务端模型名。",
+      "type": "textfield",
+      "required": false,
+      "default": "hy-mt2-plus",
+      "placeholder": "hy-mt2-plus"
+    },
+    {
+      "name": "sourceLanguage",
+      "title": "源语言",
+      "description": "默认自动判断。术语库接口在非自动时发送 source。",
+      "type": "dropdown",
+      "required": false,
+      "default": "auto",
+      "data": [
+        { "title": "自动", "value": "auto" },
+        { "title": "简体中文", "value": "zh-Hans" },
+        { "title": "繁体中文", "value": "zh-Hant" },
+        { "title": "英语", "value": "en" },
+        { "title": "日语", "value": "ja" },
+        { "title": "韩语", "value": "ko" },
+        { "title": "法语", "value": "fr" },
+        { "title": "德语", "value": "de" },
+        { "title": "西班牙语", "value": "es" },
+        { "title": "葡萄牙语", "value": "pt" },
+        { "title": "意大利语", "value": "it" },
+        { "title": "俄语", "value": "ru" },
+        { "title": "阿拉伯语", "value": "ar" },
+        { "title": "泰语", "value": "th" },
+        { "title": "越南语", "value": "vi" },
+        { "title": "印尼语", "value": "id" },
+        { "title": "马来语", "value": "ms" },
+        { "title": "菲律宾语", "value": "fil" },
+        { "title": "印地语", "value": "hi" },
+        { "title": "波兰语", "value": "pl" },
+        { "title": "捷克语", "value": "cs" },
+        { "title": "荷兰语", "value": "nl" },
+        { "title": "土耳其语", "value": "tr" },
+        { "title": "乌克兰语", "value": "uk" },
+        { "title": "粤语", "value": "yue" },
+        { "title": "藏语", "value": "bo" },
+        { "title": "哈萨克语", "value": "kk" },
+        { "title": "蒙古语", "value": "mn" },
+        { "title": "维吾尔语", "value": "ug" },
+        { "title": "高棉语", "value": "km" },
+        { "title": "缅甸语", "value": "my" },
+        { "title": "波斯语", "value": "fa" },
+        { "title": "古吉拉特语", "value": "gu" },
+        { "title": "乌尔都语", "value": "ur" },
+        { "title": "泰卢固语", "value": "te" },
+        { "title": "马拉地语", "value": "mr" },
+        { "title": "希伯来语", "value": "he" },
+        { "title": "孟加拉语", "value": "bn" },
+        { "title": "泰米尔语", "value": "ta" }
+      ]
+    },
+    {
+      "name": "targetLanguage",
+      "title": "目标语言",
+      "description": "默认自动：中文原文译为英语，其他原文译为简体中文。",
+      "type": "dropdown",
+      "required": false,
+      "default": "auto",
+      "data": [
+        { "title": "自动", "value": "auto" },
+        { "title": "简体中文", "value": "zh-Hans" },
+        { "title": "繁体中文", "value": "zh-Hant" },
+        { "title": "英语", "value": "en" },
+        { "title": "日语", "value": "ja" },
+        { "title": "韩语", "value": "ko" },
+        { "title": "法语", "value": "fr" },
+        { "title": "德语", "value": "de" },
+        { "title": "西班牙语", "value": "es" },
+        { "title": "葡萄牙语", "value": "pt" },
+        { "title": "意大利语", "value": "it" },
+        { "title": "俄语", "value": "ru" },
+        { "title": "阿拉伯语", "value": "ar" },
+        { "title": "泰语", "value": "th" },
+        { "title": "越南语", "value": "vi" },
+        { "title": "印尼语", "value": "id" },
+        { "title": "马来语", "value": "ms" },
+        { "title": "菲律宾语", "value": "fil" },
+        { "title": "印地语", "value": "hi" },
+        { "title": "波兰语", "value": "pl" },
+        { "title": "捷克语", "value": "cs" },
+        { "title": "荷兰语", "value": "nl" },
+        { "title": "土耳其语", "value": "tr" },
+        { "title": "乌克兰语", "value": "uk" },
+        { "title": "粤语", "value": "yue" },
+        { "title": "藏语", "value": "bo" },
+        { "title": "哈萨克语", "value": "kk" },
+        { "title": "蒙古语", "value": "mn" },
+        { "title": "维吾尔语", "value": "ug" },
+        { "title": "高棉语", "value": "km" },
+        { "title": "缅甸语", "value": "my" },
+        { "title": "波斯语", "value": "fa" },
+        { "title": "古吉拉特语", "value": "gu" },
+        { "title": "乌尔都语", "value": "ur" },
+        { "title": "泰卢固语", "value": "te" },
+        { "title": "马拉地语", "value": "mr" },
+        { "title": "希伯来语", "value": "he" },
+        { "title": "孟加拉语", "value": "bn" },
+        { "title": "泰米尔语", "value": "ta" }
+      ]
+    },
+    {
+      "name": "readSelection",
+      "title": "选中文本",
+      "label": "打开翻译命令时自动读取当前选中的文本",
+      "description": "需要辅助功能权限。关闭后只翻译命令参数或手动输入的文本。",
+      "type": "checkbox",
+      "required": false,
+      "default": true
+    },
+    {
+      "name": "primaryAction",
+      "title": "主要操作",
+      "description": "结果页回车执行的操作。",
+      "type": "dropdown",
+      "required": false,
+      "default": "copy",
+      "data": [
+        { "title": "复制译文", "value": "copy" },
+        { "title": "粘贴译文", "value": "paste" }
+      ]
+    },
+    {
+      "name": "context",
+      "title": "背景信息",
+      "description": "选填。用于消歧。对话补全写入官方背景模板；术语库接口作为 context 发送。",
+      "type": "textfield",
+      "required": false,
+      "placeholder": "这是一篇数据库文档，transaction 指数据库事务。"
+    },
+    {
+      "name": "glossary",
+      "title": "术语表",
+      "description": "选填，仅对话补全。每行一条，格式为「原文=译文」。也接受「=>」「→」或制表符。以 # 开头的行会忽略。",
+      "type": "textfield",
+      "required": false,
+      "placeholder": "首播=premiere"
+    },
+    {
+      "name": "glossaryIds",
+      "title": "术语库 ID",
+      "description": "选填，仅术语库接口。多个 ID 用逗号或空格分隔，最多 10 个。",
+      "type": "textfield",
+      "required": false,
+      "placeholder": "glossary-id"
+    },
+    {
+      "name": "style",
+      "title": "译文风格",
+      "description": "选填，仅对话补全。例如「书面语，句子完整」。",
+      "type": "textfield",
+      "required": false,
+      "placeholder": "书面语，句子完整"
+    },
+    {
+      "name": "prompt",
+      "title": "自定义提示词",
+      "description": "选填，仅对话补全。留空使用官方模板。占位符：{target_lang}、{source_lang}、{source_text}、{context}、{glossary}、{style}。",
+      "type": "textfield",
+      "required": false
+    },
+    {
+      "name": "temperature",
+      "title": "Temperature",
+      "description": "选填。填写数字后才会发送。",
+      "type": "textfield",
+      "required": false,
+      "placeholder": "0.3"
+    },
+    {
+      "name": "topP",
+      "title": "Top P",
+      "description": "选填。取值 0 到 1。填写后才会发送 top_p。",
+      "type": "textfield",
+      "required": false,
+      "placeholder": "0.8"
+    },
+    {
+      "name": "maxTokens",
+      "title": "Max Tokens",
+      "description": "选填。正整数。填写后才会发送 max_tokens。",
+      "type": "textfield",
+      "required": false,
+      "placeholder": "2048"
+    },
+    {
+      "name": "extra",
+      "title": "其他参数",
+      "description": "选填。JSON 对象，合并进请求体，同名字段会覆盖插件生成的值。",
+      "type": "textfield",
+      "required": false,
+      "placeholder": "{\"seed\": 1}"
+    },
+    {
+      "name": "timeout",
+      "title": "请求超时",
+      "description": "选填。单位为秒，范围 30 到 300。留空为 60 秒。",
+      "type": "textfield",
+      "required": false,
+      "placeholder": "60"
+    }
+  ],
+  "scripts": {
+    "build-ocr": "bash scripts/build-ocr.sh",
+    "prebuild": "bash scripts/build-ocr.sh",
+    "build": "ray build -e dist -o dist",
+    "dev": "bash scripts/build-ocr.sh && ray develop",
+    "lint": "eslint . && prettier --check src test",
+    "test": "tsx --test test/**/*.test.ts"
+  },
+  "dependencies": {
+    "@raycast/api": "1.104.25"
+  },
+  "devDependencies": {
+    "@raycast/eslint-config": "2.2.0",
+    "@types/node": "22.19.1",
+    "@types/react": "19.2.2",
+    "eslint": "9.39.1",
+    "prettier": "3.7.4",
+    "tsx": "4.20.6",
+    "typescript": "5.9.3"
+  }
+}

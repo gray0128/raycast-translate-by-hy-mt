@@ -4,3 +4,4 @@ raycast-env.d.ts
 assets/ocr-tool
 .DS_Store
 *.log
+.commandcode/

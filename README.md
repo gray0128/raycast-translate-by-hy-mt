@@ -22,7 +22,7 @@ Raycast 会导入这个目录。给「翻译」和「截图翻译」分别设置
 
 ### Tinycast
 
-下载 [Releases](https://github.com/gray0128/raycast-translate-by-hy-mt/releases) 中的 `raycast-translate-by-hy-mt-1.1.5.zip`，解压后在 Tinycast 的「设置 → 扩展 → 从文件夹添加」里选择解压出的目录。
+下载 [Releases](https://github.com/gray0128/raycast-translate-by-hy-mt/releases) 中的 `raycast-translate-by-hy-mt-1.1.6.zip`，解压后在 Tinycast 的「设置 → 扩展 → 从文件夹添加」里选择解压出的目录。
 
 也可以在本机执行 `npm install` 和 `npm run build`，再添加生成的 `dist` 目录。Tinycast 从源码安装时会执行构建；截图识别需要本机有 Swift 编译器。
 

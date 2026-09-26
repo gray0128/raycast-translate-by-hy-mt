@@ -5,7 +5,6 @@ import {
   Detail,
   Form,
   LaunchProps,
-  LocalStorage,
   Toast,
   getPreferenceValues,
   getSelectedText,
@@ -14,7 +13,6 @@ import {
   showToast,
 } from "@raycast/api";
 import { LANGUAGE_OPTIONS, errorMessage, explainText, readSettings, translateText, type Settings } from "./hy-mt";
-import { PENDING_SCREENSHOT_TRANSLATION, parsePendingTranslation } from "./pending-translation";
 
 type TranslateContext = {
   sourceText?: string;
@@ -54,18 +52,14 @@ export default function Command(
   useEffect(() => {
     let cancelled = false;
     void (async () => {
-      const pending = await readPendingScreenshotTranslation();
-      const sourceFromCapture = contextSource || pending?.sourceText;
-      const translationFromCapture = contextTranslation || pending?.translation;
-      const targetFromCapture = contextTarget || pending?.target;
-      if (sourceFromCapture && translationFromCapture) {
+      if (contextSource && contextTranslation) {
         if (!cancelled) {
           setState({
             status: "result",
-            source: sourceFromCapture,
-            translation: translationFromCapture,
-            target: targetFromCapture || settings.targetLanguage,
-            targetName: languageTitle(targetFromCapture || settings.targetLanguage),
+            source: contextSource,
+            translation: contextTranslation,
+            target: contextTarget || settings.targetLanguage,
+            targetName: languageTitle(contextTarget || settings.targetLanguage),
           });
         }
         return;
@@ -314,13 +308,6 @@ async function explain(settings: Settings, current: ResultState, setState: (stat
       retry: "lesson",
     });
   }
-}
-
-async function readPendingScreenshotTranslation() {
-  const raw = await LocalStorage.getItem<string>(PENDING_SCREENSHOT_TRANSLATION);
-  if (typeof raw !== "string" || !raw) return undefined;
-  await LocalStorage.removeItem(PENDING_SCREENSHOT_TRANSLATION);
-  return parsePendingTranslation(raw);
 }
 
 function languageTitle(code: string): string {

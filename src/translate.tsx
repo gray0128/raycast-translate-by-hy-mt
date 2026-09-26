@@ -9,6 +9,7 @@ import {
   getPreferenceValues,
   getSelectedText,
   openExtensionPreferences,
+  popToRoot,
   showToast,
 } from "@raycast/api";
 import { LANGUAGE_OPTIONS, errorMessage, explainText, readSettings, translateText, type Settings } from "./hy-mt";
@@ -258,6 +259,12 @@ function ResultView(props: {
               ))}
             </ActionPanel.Submenu>
           )}
+          <Action
+            title="返回主界面"
+            onAction={() => {
+              void popToRoot({ clearSearchBar: true });
+            }}
+          />
           <Action title="打开配置" onAction={openExtensionPreferences} />
         </ActionPanel>
       }

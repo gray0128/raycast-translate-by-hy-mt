@@ -100,6 +100,10 @@ export type Settings = {
   targetLanguage: string;
   readSelection: boolean;
   primaryAction: string;
+  dictionary: boolean;
+  autoSaveWord: boolean;
+  eudicToken: string;
+  eudicBookId: string;
   context: string;
   glossary: string;
   glossaryIds: string;
@@ -135,6 +139,10 @@ export function readSettings(option: RawOption = {}): Settings {
     targetLanguage: trim(option.targetLanguage) || "auto",
     readSelection: option.readSelection !== false && option.readSelection !== "0" && option.readSelection !== 0,
     primaryAction: trim(option.primaryAction) || "copy",
+    dictionary: option.dictionary !== false && option.dictionary !== "0" && option.dictionary !== 0,
+    autoSaveWord: option.autoSaveWord === true || option.autoSaveWord === "1" || option.autoSaveWord === 1,
+    eudicToken: trim(option.eudicToken),
+    eudicBookId: trim(option.eudicBookId),
     context: trim(option.context),
     glossary: option.glossary == null ? "" : String(option.glossary),
     glossaryIds: option.glossaryIds == null ? "" : String(option.glossaryIds),

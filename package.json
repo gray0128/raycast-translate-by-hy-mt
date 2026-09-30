@@ -2,8 +2,8 @@
   "$schema": "https://www.raycast.com/schemas/extension.json",
   "name": "translate-by-hy-mt",
   "title": "混元翻译 HY-MT2",
-  "version": "1.1.8",
-  "description": "用腾讯混元 HY-MT2 翻译选中文本或截图。兼容 Raycast 与 Tinycast。",
+  "version": "1.2.0",
+  "description": "用腾讯混元 HY-MT2 翻译选中文本或截图。单词显示音标和释义，并可收藏到欧路单词本。",
   "icon": "icon.png",
   "author": "gray0128",
   "platforms": [
@@ -439,6 +439,39 @@
           "value": "paste"
         }
       ]
+    },
+    {
+      "name": "dictionary",
+      "title": "单词释义",
+      "label": "查询单词时显示音标、释义和发音",
+      "description": "原文是英语单词，或不超过 3 个词的英语词组时，向有道词典查询。句子仍只显示译文。",
+      "type": "checkbox",
+      "required": false,
+      "default": true
+    },
+    {
+      "name": "autoSaveWord",
+      "title": "自动收藏",
+      "label": "查到英语单词后自动加入欧路单词本",
+      "description": "需要填写欧路授权和单词本 ID。关闭后仍可在结果页手动收藏。",
+      "type": "checkbox",
+      "required": false,
+      "default": false
+    },
+    {
+      "name": "eudicToken",
+      "title": "欧路授权",
+      "description": "选填。在 https://my.eudic.net/OpenAPI/Authorization 登录后复制 Authorization。",
+      "type": "password",
+      "required": false
+    },
+    {
+      "name": "eudicBookId",
+      "title": "欧路单词本 ID",
+      "description": "选填。不知道 ID 时留空，在单词结果页选择「查看欧路单词本」。默认生词本通常是 0。",
+      "type": "textfield",
+      "required": false,
+      "placeholder": "0"
     },
     {
       "name": "context",

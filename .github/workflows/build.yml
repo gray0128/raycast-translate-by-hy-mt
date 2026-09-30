@@ -54,7 +54,7 @@ jobs:
           version="$(node -p "require('./package.json').version")"
           asset="raycast-translate-by-hy-mt-${version}.zip"
           tag="v${version}"
-          notes="支持选中文本和截图翻译。可在 Raycast 与 Tinycast 中使用。"
+          notes="支持选中文本和截图翻译。英语单词显示音标、释义和发音，并可收藏到欧路单词本。可在 Raycast 与 Tinycast 中使用。"
           if gh release view "$tag" >/dev/null 2>&1; then
             gh release upload "$tag" "$asset" --clobber
           else

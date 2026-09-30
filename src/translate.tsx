@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type Dispatch, type SetStateAction } from "react";
 import {
   Action,
   ActionPanel,
   Detail,
   Form,
+  Icon,
   LaunchProps,
   Toast,
   getPreferenceValues,
@@ -12,6 +13,14 @@ import {
   popToRoot,
   showToast,
 } from "@raycast/api";
+import {
+  isLexicalQuery,
+  lookupDictionary,
+  playDictionaryAudio,
+  renderDictionary,
+  type DictionaryEntry,
+} from "./dictionary";
+import { formatEudicBooks, listEudicBooks, saveEudicWord } from "./eudic";
 import { LANGUAGE_OPTIONS, errorMessage, explainText, readSettings, translateText, type Settings } from "./hy-mt";
 
 type TranslateContext = {
@@ -31,6 +40,8 @@ type ResultState = {
   target: string;
   targetName: string;
   lesson?: string;
+  dictionary?: DictionaryEntry | null;
+  collected?: boolean;
 };
 
 type ViewState =
@@ -172,6 +183,15 @@ export default function Command(
         void explain(settings, state, setState);
       }}
       onCloseLesson={() => setState({ ...state, lesson: undefined })}
+      onCollect={() => {
+        void collect(settings, state, setState);
+      }}
+      onShowWordbooks={() => {
+        void showWordbooks(settings);
+      }}
+      onPlay={(url) => {
+        void play(url);
+      }}
     />
   );
 }
@@ -211,8 +231,13 @@ function ResultView(props: {
   onEdit: () => void;
   onExplain: () => void;
   onCloseLesson: () => void;
+  onCollect: () => void;
+  onShowWordbooks: () => void;
+  onPlay: (url: string) => void;
 }) {
   const learning = Boolean(props.state.lesson);
+  const entry = props.state.dictionary;
+  const lexical = isLexicalQuery(props.state.source);
   const copy = (
     <Action.CopyToClipboard
       title={learning ? "复制讲解" : "复制译文"}
@@ -224,13 +249,21 @@ function ResultView(props: {
   );
   return (
     <Detail
-      markdown={props.state.lesson || props.state.translation}
+      markdown={
+        learning
+          ? props.state.lesson
+          : entry
+            ? renderDictionary(entry, props.state.translation)
+            : props.state.translation
+      }
       metadata={
         <Detail.Metadata>
           <Detail.Metadata.Label
             title={learning ? "模式" : "目标语言"}
             text={learning ? "学习模式" : props.state.targetName}
           />
+          {entry?.usPhonetic ? <Detail.Metadata.Label title="美式音标" text={`/${entry.usPhonetic}/`} /> : null}
+          {entry?.ukPhonetic ? <Detail.Metadata.Label title="英式音标" text={`/${entry.ukPhonetic}/`} /> : null}
           <Detail.Metadata.Separator />
           <Detail.Metadata.Label title="原文" text={props.state.source} />
         </Detail.Metadata>
@@ -239,6 +272,20 @@ function ResultView(props: {
         <ActionPanel>
           {props.pasteFirst ? paste : copy}
           {props.pasteFirst ? copy : paste}
+          {entry?.usAudio ? (
+            <Action icon={Icon.Play} title="播放美式发音" onAction={() => props.onPlay(entry.usAudio ?? "")} />
+          ) : null}
+          {entry?.ukAudio ? (
+            <Action icon={Icon.Play} title="播放英式发音" onAction={() => props.onPlay(entry.ukAudio ?? "")} />
+          ) : null}
+          {lexical ? (
+            <Action
+              icon={Icon.Star}
+              title={props.state.collected ? "已收藏到欧路" : "收藏到欧路"}
+              onAction={props.onCollect}
+            />
+          ) : null}
+          {lexical ? <Action icon={Icon.List} title="查看欧路单词本" onAction={props.onShowWordbooks} /> : null}
           {learning ? (
             <Action title="返回译文" onAction={props.onCloseLesson} />
           ) : (
@@ -276,26 +323,95 @@ async function run(
   settings: Settings,
   text: string,
   target: string | undefined,
-  setState: (state: ViewState) => void,
+  setState: Dispatch<SetStateAction<ViewState>>,
   cancelled: () => boolean,
 ) {
   try {
+    const lexical = isLexicalQuery(text);
+    const dictionaryPromise = lexical && settings.dictionary ? lookupDictionary(text) : Promise.resolve(null);
     const result = await translateText(settings, text, target);
-    if (!cancelled()) {
-      setState({
-        status: "result",
-        source: text,
-        translation: result.text,
-        target: result.target,
-        targetName: result.targetName,
-      });
-    }
+    const dictionary = await dictionaryPromise;
+    if (cancelled()) return;
+    const next: ResultState = {
+      status: "result",
+      source: text,
+      translation: result.text,
+      target: result.target,
+      targetName: result.targetName,
+      dictionary,
+    };
+    setState(next);
+    if (settings.autoSaveWord && lexical) void autoSave(settings, text, setState, cancelled);
   } catch (error) {
     if (!cancelled()) setState({ status: "error", message: errorMessage(error), source: text });
   }
 }
 
-async function explain(settings: Settings, current: ResultState, setState: (state: ViewState) => void) {
+async function autoSave(
+  settings: Settings,
+  text: string,
+  setState: Dispatch<SetStateAction<ViewState>>,
+  cancelled: () => boolean,
+) {
+  const outcome = await saveEudicWord(settings.eudicToken, settings.eudicBookId, text);
+  if (cancelled()) return;
+  if (outcome.ok) {
+    setState((current) =>
+      current.status === "result" && current.source === text ? { ...current, collected: true } : current,
+    );
+    await showToast({ style: Toast.Style.Success, title: "已加入欧路单词本", message: text });
+    return;
+  }
+  await showToast({ style: Toast.Style.Failure, title: "未能自动收藏", message: outcome.message });
+}
+
+async function collect(settings: Settings, current: ResultState, setState: Dispatch<SetStateAction<ViewState>>) {
+  if (current.collected) {
+    await showToast({ style: Toast.Style.Success, title: "已在欧路单词本中", message: current.source });
+    return;
+  }
+  const outcome = await saveEudicWord(settings.eudicToken, settings.eudicBookId, current.source);
+  if (!outcome.ok) {
+    await showToast({ style: Toast.Style.Failure, title: "收藏失败", message: outcome.message });
+    return;
+  }
+  setState((state) =>
+    state.status === "result" && state.source === current.source ? { ...state, collected: true } : state,
+  );
+  await showToast({ style: Toast.Style.Success, title: "已加入欧路单词本", message: current.source });
+}
+
+async function showWordbooks(settings: Settings) {
+  if (!settings.eudicToken) {
+    await showToast({
+      style: Toast.Style.Failure,
+      title: "未填写欧路授权",
+      message: "请在欧路账户管理复制 Authorization，再填入扩展配置。",
+    });
+    return;
+  }
+  try {
+    const books = await listEudicBooks(settings.eudicToken);
+    const summary = formatEudicBooks(books);
+    await showToast({
+      style: summary ? Toast.Style.Success : Toast.Style.Failure,
+      title: summary ? "欧路单词本" : "没有英语单词本",
+      message: summary || "当前授权下没有可写入的英语单词本。",
+    });
+  } catch (error) {
+    await showToast({ style: Toast.Style.Failure, title: "无法获取欧路单词本", message: errorMessage(error) });
+  }
+}
+
+async function play(url: string) {
+  try {
+    await playDictionaryAudio(url);
+  } catch (error) {
+    await showToast({ style: Toast.Style.Failure, title: "无法播放发音", message: errorMessage(error) });
+  }
+}
+
+async function explain(settings: Settings, current: ResultState, setState: Dispatch<SetStateAction<ViewState>>) {
   try {
     const lesson = await explainText(settings, current.source, current.translation);
     setState({ ...current, lesson });
